@@ -1,317 +1,273 @@
-# Airbnb-Style Property Listing with Multi-Database & Agent-Scoped Pricing
+# Airbnb Property Listing System
 
-A full-stack application that demonstrates an Airbnb-style property listing system with agent-specific pricing using Laravel (API) and React.js (frontend).
+A full-stack Airbnb-style property listing platform with complete CRUD operations, mobile responsiveness, and agent management system.
 
-## 🏗️ Architecture Overview
+## 🚀 Features
 
-This system uses **multiple MySQL databases** to separate concerns and demonstrate complex database relationships:
+### ✅ Core Features
+- **Complete CRUD Operations**: Full Create, Read, Update, Delete for properties, experiences, and services
+- **Agent Management**: Agent authentication, profile management, and property ownership
+- **Mobile Responsive**: Optimized for tablets and mobile devices
+- **Database-Driven**: SQLite database with proper relationships and seeding
+- **RESTful APIs**: Comprehensive API endpoints with validation
+- **Modern UI**: Airbnb-inspired design with Bootstrap 5
 
-- **properties_db**: Contains property listings and images
-- **agents_db**: Contains agent information and agent-specific pricing
+### 🎯 Key Capabilities
+- **Property Management**: Agents can create, update, and manage their properties
+- **Price Editing**: Real-time price updates with PUT method
+- **Experience & Services**: Complete CRUD for experiences and services
+- **Nearby Destinations**: Database-driven destination suggestions
+- **Authentication**: Secure agent login and registration
+- **Responsive Design**: Mobile-first approach with breakpoints
 
-## 🗄️ Database Configuration
+## 🏗️ Architecture
 
-### Multi-Database Setup
+### Backend (Laravel)
+- **Framework**: Laravel 12
+- **Database**: SQLite with proper migrations and seeders
+- **Authentication**: Laravel Sanctum for API authentication
+- **API**: RESTful endpoints with comprehensive validation
 
-The application is configured to use two separate MySQL databases:
+### Frontend (React)
+- **Framework**: React 19 with functional components
+- **Styling**: Bootstrap 5 with custom CSS
+- **State Management**: React Context API
+- **Routing**: React Router DOM
+- **Responsive**: Mobile-first design approach
 
-```php
-// config/database.php
-'connections' => [
-    'properties_db' => [
-        'driver' => 'mysql',
-        'host' => env('DB_HOST', '127.0.0.1'),
-        'database' => env('PROPERTIES_DB_DATABASE', 'properties_db'),
-        // ... other config
-    ],
-    'agents_db' => [
-        'driver' => 'mysql',
-        'host' => env('DB_HOST', '127.0.0.1'),
-        'database' => env('AGENTS_DB_DATABASE', 'agents_db'),
-        // ... other config
-    ],
-]
-```
+## 📱 Mobile Responsiveness
 
-### Environment Variables
+### Breakpoints
+- **Desktop**: ≥768px - Full navigation and features
+- **Tablet**: ≤768px - Optimized navigation and buttons
+- **Mobile**: ≤576px - Compact interface with essential features
 
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USERNAME=root
-DB_PASSWORD=
+### Mobile Features
+- **Responsive Navbar**: Logo visible on all devices
+- **Compact Navigation**: Shortened text and optimized spacing
+- **Touch-Friendly**: Larger tap targets and proper spacing
+- **Hidden Elements**: Non-essential elements hidden on mobile
 
-PROPERTIES_DB_DATABASE=properties_db
-AGENTS_DB_DATABASE=agents_db
-```
-
-## 📊 Database Schema
-
-### Properties Database (`properties_db`)
-
-#### `properties` table
-- `id` - Primary key
-- `title` - Property name
-- `city` - Location
-- `base_price` - Default price per night
-- `property_type` - villa, apartment, cottage, etc.
-- `status` - active/inactive
-- `created_at`, `updated_at` - Timestamps
-
-#### `property_images` table
-- `id` - Primary key
-- `property_id` - Foreign key to properties
-- `image_url` - Image URL
-- `is_primary` - Boolean flag for primary image
-
-### Agents Database (`agents_db`)
-
-#### `agents` table
-- `id` - Primary key
-- `name` - Agent name
-- `email` - Unique email for login
-- `password` - Hashed password
-- `created_at`, `updated_at` - Timestamps
-
-#### `agent_properties` table (⭐ TRAP TABLE)
-- `id` - Primary key
-- `agent_id` - Foreign key to agents
-- `property_id` - Foreign key to properties (cross-database)
-- `agent_price` - Agent-specific price
-- `created_at`, `updated_at` - Timestamps
-- **Unique constraint**: (`agent_id`, `property_id`)
-
-## 🎯 Price Selection Logic
-
-The core business logic handles dynamic pricing based on agent filtering:
-
-### API Endpoint: `GET /api/properties`
-
-**Query Parameters:**
-- `city` - Filter by city
-- `property_type` - Filter by property type  
-- `agent_id` - Filter by specific agent
-
-**Price Logic:**
-
-| Scenario | Price Display | Price Type |
-|----------|---------------|------------|
-| No agent filter | `properties.base_price` | base_price |
-| Agent selected + custom price exists | `agent_properties.agent_price` | agent_price |
-| Agent selected + no custom price | `properties.base_price` | base_price |
-
-**Implementation:**
-```php
-// Dynamic pricing logic in PropertyController
-if ($request->filled('agent_id')) {
-    $agentId = $request->agent_id;
-    
-    $properties = $query->get()->map(function ($property) use ($agentId) {
-        $agentProperty = AgentProperty::where('agent_id', $agentId)
-            ->where('property_id', $property->id)
-            ->first();
-
-        $property->price = $agentProperty ? $agentProperty->agent_price : $property->base_price;
-        $property->price_type = $agentProperty ? 'agent_price' : 'base_price';
-        
-        return $property;
-    });
-}
-```
-
-## 🔐 Authentication System
-
-### Agent Login Flow
-1. **Login Page**: `/login`
-   - Email/password validation
-   - JWT token generation using Laravel Sanctum
-   - Session management in React context
-
-2. **Protected Routes**: 
-   - `/dashboard` - Agent dashboard
-   - API endpoints require `Bearer` token
-
-### Demo Credentials
-- **Email**: john@agent.com, sarah@agent.com, michael@agent.com
-- **Password**: password123
-
-## 🎨 Frontend Design (React + Bootstrap)
-
-### Responsive Design Strategy
-
-#### Desktop (≥768px)
-- **Layout**: Sidebar filters + 3-4 column property grid
-- **Navigation**: Top navbar with user menu
-- **Interactions**: Hover effects, tooltips
-
-#### Mobile (<768px)
-- **Layout**: Single column property cards
-- **Filters**: Collapsible modal or top filters
-- **Touch**: Large tap areas, swipe gestures
-
-### Key Components
-
-1. **PropertyList**: Main listing with filters
-2. **AgentDashboard**: Agent pricing management
-3. **Login**: Authentication interface
-4. **Navbar**: Navigation with auth state
-
-### Bootstrap 5 Features
-- Responsive grid system
-- Modal dialogs for price updates
-- Form validation
-- Badge components for status indicators
-
-## 🚀 API Design
-
-### Authentication Endpoints
-```
-POST /api/login          - Agent login
-POST /api/logout         - Agent logout
-```
-
-### Property Endpoints
-```
-GET /api/properties      - List properties with filters
-POST /api/agent-properties - Set agent price
-PUT /api/agent-properties/{id} - Update agent price
-```
-
-### Response Format
-```json
-{
-  "data": [...],
-  "current_page": 1,
-  "per_page": 12,
-  "total": 50,
-  "last_page": 5
-}
-```
-
-## 🔧 Installation & Setup
+## 🔧 Installation
 
 ### Prerequisites
 - PHP 8.0+
-- MySQL 5.7+
 - Node.js 16+
 - Composer
 - npm/yarn
 
 ### Backend Setup
-
-1. **Clone and install dependencies**
 ```bash
-git clone <repository>
+git clone https://github.com/BinavB/airbnb-property-listing.git
 cd airbnb-property-listing
 composer install
-```
-
-2. **Database setup**
-```sql
-CREATE DATABASE properties_db;
-CREATE DATABASE agents_db;
-```
-
-3. **Environment configuration**
-```bash
 cp .env.example .env
 php artisan key:generate
-```
-
-4. **Run migrations**
-```bash
-php artisan migrate --database=properties_db
-php artisan migrate --database=agents_db
-```
-
-5. **Seed sample data**
-```bash
-php artisan db:seed --class=PropertySeeder --database=properties_db
-php artisan db:seed --class=AgentSeeder --database=agents_db
-```
-
-6. **Start Laravel server**
-```bash
+php artisan migrate
+php artisan db:seed
 php artisan serve
 ```
 
 ### Frontend Setup
-
-1. **Install dependencies**
 ```bash
 cd frontend
 npm install
-```
-
-2. **Start development server**
-```bash
 npm start
 ```
 
-## 🎯 Key Features Demonstrated
+## 📊 Database Schema
 
-### Multi-Database Architecture
-- Cross-database relationships
-- Separate connection management
-- Transaction handling
+### Tables
+- **properties**: Property listings with full details
+- **property_images**: Multiple images per property
+- **agents**: Agent information and authentication
+- **nearby_destinations**: Popular destinations with icons
+- **experiences**: Experience listings
+- **services**: Service offerings
 
-### Dynamic Pricing Logic
-- Agent-specific pricing
-- Fallback to base price
+### Relationships
+- Properties belong to agents (agent_id)
+- Properties have multiple images
+- Agents can manage multiple properties
+
+## 🔐 Authentication
+
+### Demo Credentials
+- **Email**: john@agent.com, sarah@agent.com, michael@agent.com
+- **Password**: password123
+
+### Features
+- **Agent Login**: Secure authentication with JWT tokens
+- **Profile Management**: Update agent information
+- **Protected Routes**: Agent-only endpoints
+- **Session Management**: Automatic token handling
+
+## 🚀 API Endpoints
+
+### Authentication
+```
+POST /api/auth/login          - Agent login
+POST /api/auth/logout         - Agent logout
+POST /api/auth/register       - Agent registration
+GET  /api/auth/user           - Get current user
+```
+
+### Properties (CRUD)
+```
+GET    /api/properties           - List all properties
+GET    /api/properties/{id}      - Show single property
+POST   /api/agent/properties     - Create property (agent)
+PUT    /api/agent/properties/{id} - Update property (agent)
+DELETE /api/agent/properties/{id} - Delete property (agent)
+POST   /api/agent/properties/{id}/price - Update price (agent)
+```
+
+### Experiences (CRUD)
+```
+GET    /api/experiences           - List experiences
+GET    /api/experiences/{id}      - Show experience
+POST   /api/agent/experiences     - Create experience (agent)
+PUT    /api/agent/experiences/{id} - Update experience (agent)
+DELETE /api/agent/experiences/{id} - Delete experience (agent)
+```
+
+### Services (CRUD)
+```
+GET    /api/services             - List services
+GET    /api/services/{id}        - Show service
+POST   /api/agent/services       - Create service (agent)
+PUT    /api/agent/services/{id}   - Update service (agent)
+DELETE /api/agent/services/{id}   - Delete service (agent)
+```
+
+### Agents
+```
+GET    /api/agents               - List agents
+GET    /api/agents/{id}          - Show agent
+GET    /api/agent/profile        - Agent profile
+PUT    /api/agent/profile        - Update profile
+```
+
+### Additional
+```
+GET    /api/nearby-destinations  - Popular destinations
+GET    /api/filters              - Filter options
+```
+
+## 🎨 Frontend Components
+
+### Key Components
+- **Navbar**: Responsive navigation with authentication
+- **HomePage**: Property listing with search and filters
+- **AgentHomePage**: Agent dashboard with property management
+- **LoginPage**: Authentication interface
+- **PropertyCard**: Property display with edit functionality
+
+### Features
+- **Animated Navigation**: Active link highlighting
+- **Guest Counters**: Interactive guest selection
+- **Price Modals**: Edit prices with modal interface
+- **Responsive Grid**: Adaptive property layouts
+
+## 📱 Mobile UI Examples
+
+### Navigation
+- Logo visible on all screen sizes
+- Compact navigation links
+- Shortened button text ("Login" → "Login", "Logout" → "Out")
+- Hidden non-essential elements on mobile
+
+### Property Cards
+- Responsive image sizing
+- Optimized text layout
+- Touch-friendly buttons
+- Proper spacing for mobile interaction
+
+## 🔧 Development
+
+### Running the Application
+1. **Backend**: `php artisan serve` (http://localhost:8000)
+2. **Frontend**: `npm start` (http://localhost:3000)
+
+### Database Operations
+```bash
+php artisan migrate:fresh     # Fresh migration
+php artisan db:seed         # Seed database
+php artisan tinker          # Database interaction
+```
+
+### Testing
+- **Public View**: http://localhost:3000
+- **Agent Login**: Use demo credentials
+- **API Testing**: Use Postman collection (included)
+- **Mobile Testing**: Use browser dev tools or mobile device
+
+## 📋 Project Structure
+
+```
+airbnb-property-listing/
+├── backend/
+│   ├── app/
+│   │   ├── Http/Controllers/Api/
+│   │   ├── Models/
+│   │   └── ...
+│   ├── database/
+│   │   ├── migrations/
+│   │   ├── seeders/
+│   │   └── ...
+│   └── routes/api.php
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   └── ...
+│   └── public/
+├── postman-testing.md
+├── postman-collection.json
+└── README.md
+```
+
+## 🎯 Key Achievements
+
+### ✅ Complete CRUD Operations
+- Full Create, Read, Update, Delete for all resources
+- Proper validation and error handling
+- Agent ownership verification
+- Soft delete functionality
+
+### ✅ Mobile Responsiveness
+- Responsive navbar with logo visibility
+- Optimized layouts for all screen sizes
+- Touch-friendly interface elements
+- Proper breakpoints and media queries
+
+### ✅ Database Integration
+- Complete database schema with relationships
+- Proper seeding with sample data
+- Agent ownership and permissions
 - Real-time price updates
 
-### Modern Frontend
-- React functional components
-- Context API for state management
-- Bootstrap 5 responsive design
-- Protected routes
+### ✅ Professional UI/UX
+- Airbnb-inspired design
+- Smooth animations and transitions
+- Intuitive navigation and interactions
+- Consistent styling across components
 
-### API Best Practices
-- RESTful endpoints
-- JWT authentication
-- CORS configuration
-- Pagination
-- Input validation
+## 🔮 Future Enhancements
 
-## ⚖️ Trade-offs Due to Time Limit
-
-1. **Image Upload**: Used placeholder URLs instead of file upload system
-2. **Advanced Search**: Basic filtering only (no full-text search)
-3. **Real-time Updates**: No WebSocket implementation
-4. **Payment Integration**: Mock pricing system only
-5. **Advanced Analytics**: Basic statistics only
-6. **Testing**: No automated tests included
-7. **Error Handling**: Basic error handling only
-8. **Performance**: No caching implemented
-
-## 🔍 Testing the System
-
-1. **Public View**: Visit `http://localhost:3000` to see all properties with base prices
-2. **Agent Login**: Use demo credentials to access agent features
-3. **Price Management**: Set custom prices as an agent
-4. **Filter Testing**: Apply city, type, and agent filters
-5. **Responsive Design**: Test on mobile and desktop viewports
-
-## 🐛 Known Issues & Solutions
-
-1. **CORS Issues**: Ensure `supports_credentials` is true in cors.php
-2. **MySQL Connection**: Verify database credentials and permissions
-3. **Migration Errors**: Check MySQL version and charset settings
-4. **API Timeouts**: Increase PHP execution time for large datasets
-
-## 📝 Future Enhancements
-
-1. **Real-time Notifications**: WebSocket integration
-2. **Advanced Analytics**: Revenue tracking, occupancy rates
-3. **Image Management**: File upload, compression, CDN
-4. **Booking System**: Calendar integration, reservations
-5. **Review System**: Property ratings and reviews
-6. **Multi-language Support**: Internationalization
-7. **Advanced Search**: Geolocation, amenities filters
-8. **Admin Panel**: System management interface
+1. **Real-time Updates**: WebSocket integration
+2. **Advanced Search**: Geolocation and filters
+3. **Image Upload**: File management system
+4. **Booking System**: Calendar integration
+5. **Review System**: Ratings and feedback
+6. **Admin Panel**: System management
+7. **Analytics**: Performance metrics
+8. **Multi-language**: Internationalization
 
 ---
 
-**Tech Stack**: Laravel 12, MySQL, React 19, Bootstrap 5, JWT Authentication
-# airbnb-property-listing
+**Tech Stack**: Laravel 12, React 19, Bootstrap 5, SQLite, JWT Authentication
+
+**Live Demo**: Available at http://localhost:3000 (after setup)
+
+**Repository**: https://github.com/BinavB/airbnb-property-listing
