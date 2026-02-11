@@ -314,3 +314,4 @@ npm start
 ---
 
 **Tech Stack**: Laravel 12, MySQL, React 19, Bootstrap 5, JWT Authentication
+# airbnb-property-listing
